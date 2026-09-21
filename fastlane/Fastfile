@@ -6,11 +6,17 @@ default_platform(:ios)
 
 KEYCHAIN_NAME = "ci-build.keychain-db"
 
+# fastlane runs lanes from inside fastlane/, so resolve repo-root paths explicitly.
+REPO_ROOT = File.expand_path("..", __dir__)
+XCODEPROJ = File.join(REPO_ROOT, "OpenVision.xcodeproj")
+BUILD_DIR = File.join(REPO_ROOT, "build")
+IPA_PATH = File.join(BUILD_DIR, "OpenVision.ipa")
+
 platform :ios do
   desc "Register OpenVision in App Store Connect (one-time setup)"
   lane :register_app do
     api_key = load_asc_api_key
-    marketing_version = YAML.load_file("project.yml").dig("settings", "base", "MARKETING_VERSION").to_s
+    marketing_version = YAML.load_file(File.join(REPO_ROOT, "project.yml")).dig("settings", "base", "MARKETING_VERSION").to_s
 
     produce(
       api_key: api_key,
@@ -30,7 +36,7 @@ platform :ios do
     build_number = ENV["GITHUB_RUN_NUMBER"] || Time.now.strftime("%Y%m%d%H%M")
 
     increment_build_number(
-      xcodeproj: "OpenVision.xcodeproj",
+      xcodeproj: XCODEPROJ,
       build_number: build_number
     )
 
@@ -63,10 +69,10 @@ platform :ios do
 
     build_app(
       scheme: "OpenVision",
-      project: "OpenVision.xcodeproj",
+      project: XCODEPROJ,
       configuration: "Release",
       export_method: "app-store",
-      output_directory: "build",
+      output_directory: BUILD_DIR,
       output_name: "OpenVision.ipa",
       xcargs: "PROVISIONING_PROFILE_SPECIFIER=#{profile_name.shellescape} " \
               "CODE_SIGN_IDENTITY='Apple Distribution' " \
@@ -76,7 +82,7 @@ platform :ios do
 
     upload_to_testflight(
       api_key: api_key,
-      ipa: "build/OpenVision.ipa",
+      ipa: IPA_PATH,
       skip_waiting_for_build_processing: true,
       distribute_external: false
     )
