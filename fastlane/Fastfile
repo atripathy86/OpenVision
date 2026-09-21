@@ -1,6 +1,5 @@
 require "securerandom"
 require "shellwords"
-require "yaml"
 
 default_platform(:ios)
 
@@ -13,22 +12,6 @@ BUILD_DIR = File.join(REPO_ROOT, "build")
 IPA_PATH = File.join(BUILD_DIR, "OpenVision.ipa")
 
 platform :ios do
-  desc "Register OpenVision in App Store Connect (one-time setup)"
-  lane :register_app do
-    api_key = load_asc_api_key
-    marketing_version = YAML.load_file(File.join(REPO_ROOT, "project.yml")).dig("settings", "base", "MARKETING_VERSION").to_s
-
-    produce(
-      api_key: api_key,
-      app_identifier: ENV.fetch("PRODUCT_BUNDLE_IDENTIFIER"),
-      app_name: "OpenVision",
-      language: "English",
-      app_version: marketing_version,
-      team_id: ENV.fetch("DEVELOPMENT_TEAM"),
-      skip_itc: false
-    )
-  end
-
   desc "Build OpenVision and upload it to TestFlight"
   lane :beta do
     api_key = load_asc_api_key

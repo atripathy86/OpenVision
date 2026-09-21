@@ -3,11 +3,6 @@ name: TestFlight
 
 on:
   workflow_dispatch:
-    inputs:
-      register_app:
-        description: "Also run the one-time App Store Connect app registration lane"
-        type: boolean
-        default: false
 
 permissions:
   contents: write
@@ -65,12 +60,8 @@ jobs:
       - name: Set up Ruby
         uses: ruby/setup-ruby@v1
         with:
-          ruby-version: "3.2"
+          ruby-version: "3.3"
           bundler-cache: true
-
-      - name: Register app in App Store Connect (first run only)
-        if: ${{ inputs.register_app }}
-        run: bundle exec fastlane ios register_app
 
       - name: Build and upload to TestFlight
         run: bundle exec fastlane ios beta

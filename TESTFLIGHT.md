@@ -23,9 +23,10 @@ Store Connect API key; no Apple ID password or local Mac is required for CI.
 4. In the Apple Developer portal (Identifiers), register the bundle ID and enable the
    **Increased Memory Limit** capability. `OpenVision.entitlements` requests it, and `match`
    does not enable capabilities, so a profile without it fails at archive time.
-5. Create the OpenVision app in App Store Connect using the exact bundle ID
-   stored in `PRODUCT_BUNDLE_IDENTIFIER`, or use the workflow’s optional
-   `register_app` input on its first run.
+5. Create the OpenVision app in App Store Connect (My Apps → + → New App) using the exact
+   bundle ID stored in `PRODUCT_BUNDLE_IDENTIFIER`. This must be done by hand: fastlane's
+   `produce` only authenticates with an Apple ID, not an App Store Connect API key, so it
+   cannot create the app from CI.
 
 ## GitHub repository secrets
 
@@ -56,9 +57,7 @@ not commit `Config.xcconfig`, `Config.swift`, or the `.p8` file.
 
 1. Enable GitHub Actions for the repository.
 2. Open **Actions → TestFlight → Run workflow**.
-3. On the first run, enable **Also run the one-time App Store Connect app
-   registration lane** if the app was not created manually.
-4. On later runs, leave that option disabled.
+3. Make sure the app already exists in App Store Connect (see the one-time setup).
 
 The workflow assigns the GitHub run number as the build number and uses the
 marketing version in `project.yml`. TestFlight processing may take additional
