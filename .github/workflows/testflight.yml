@@ -1,0 +1,83 @@
+# Builds OpenVision on a GitHub-hosted macOS runner and uploads it to TestFlight.
+name: TestFlight
+
+on:
+  workflow_dispatch:
+    inputs:
+      register_app:
+        description: "Also run the one-time App Store Connect app registration lane"
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+
+jobs:
+  beta:
+    runs-on: macos-26
+    timeout-minutes: 45
+    env:
+      DEVELOPMENT_TEAM: ${{ secrets.DEVELOPMENT_TEAM }}
+      PRODUCT_BUNDLE_IDENTIFIER: ${{ secrets.PRODUCT_BUNDLE_IDENTIFIER }}
+      META_APP_ID: ${{ secrets.META_APP_ID }}
+      CLIENT_TOKEN: ${{ secrets.CLIENT_TOKEN }}
+      APP_LINK_URL_SCHEME: ${{ secrets.APP_LINK_URL_SCHEME }}
+      APP_STORE_CONNECT_API_KEY_ID: ${{ secrets.APP_STORE_CONNECT_API_KEY_ID }}
+      APP_STORE_CONNECT_API_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_API_ISSUER_ID }}
+      APP_STORE_CONNECT_API_KEY_CONTENT: ${{ secrets.APP_STORE_CONNECT_API_KEY_CONTENT }}
+      MATCH_PASSWORD: ${{ secrets.MATCH_PASSWORD }}
+      GITHUB_TOKEN: ${{ github.token }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configure git identity for match
+        run: |
+          git config --global user.email "actions@github.com"
+          git config --global user.name "GitHub Actions"
+
+      - name: Select Xcode
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: latest-stable
+
+      - name: Install XcodeGen
+        run: brew install xcodegen
+
+      - name: Create CI build configuration
+        run: |
+          cat > Config.xcconfig <<EOF
+          DEVELOPMENT_TEAM = ${DEVELOPMENT_TEAM}
+          PRODUCT_BUNDLE_IDENTIFIER = ${PRODUCT_BUNDLE_IDENTIFIER}
+          META_APP_ID = ${META_APP_ID}
+          CLIENT_TOKEN = ${CLIENT_TOKEN}
+          APP_LINK_URL_SCHEME = ${APP_LINK_URL_SCHEME}
+          EOF
+          cp OpenVision/Config/Config.swift.example OpenVision/Config/Config.swift
+
+      - name: Generate Xcode project
+        run: xcodegen generate
+
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: "3.2"
+          bundler-cache: true
+
+      - name: Register app in App Store Connect (first run only)
+        if: ${{ inputs.register_app }}
+        run: bundle exec fastlane ios register_app
+
+      - name: Build and upload to TestFlight
+        run: bundle exec fastlane ios beta
+
+      - name: Upload build logs on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: fastlane-logs
+          path: |
+            ~/Library/Logs/gym
+            build/
+          retention-days: 5

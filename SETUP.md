@@ -9,10 +9,11 @@ Complete step-by-step guide to set up and run OpenVision.
 > during the Developer Preview phase."* Builds can only be shared through **invite-only release
 > channels, capped at 100 testers**, and only select partners may publish to the public.
 >
-> So there is **no App Store build, no TestFlight, and no downloadable IPA** — not because of
-> Apple, but because glasses features would be dead for anyone outside the developer's own Meta
-> release channel. Building it yourself sidesteps that entirely: you register your own Meta app
-> and are your own developer, so you never need an invite from anyone.
+> Public App Store distribution is not available through Meta's developer preview. However,
+> this project also includes an optional GitHub Actions → TestFlight pipeline for distributing
+> builds to authorized testers. See [TESTFLIGHT.md](TESTFLIGHT.md) for the signing and CI setup.
+> Building locally remains the most flexible path: you register your own Meta app and control
+> your own developer/tester setup.
 >
 > What you need: a **Mac**, an **iPhone**, and a free **Meta developer account**. An Apple
 > Developer account is free too. The glasses are optional — the iPhone camera works as a fallback.
