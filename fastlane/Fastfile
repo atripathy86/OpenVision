@@ -40,6 +40,7 @@ platform :ios do
       git_url: "https://x-access-token:#{ENV.fetch('GITHUB_TOKEN')}@github.com/#{ENV.fetch('GITHUB_REPOSITORY')}.git",
       git_branch: "match-certs",
       readonly: false,
+      verbose: true,
       keychain_name: KEYCHAIN_NAME,
       keychain_password: keychain_password
     )
