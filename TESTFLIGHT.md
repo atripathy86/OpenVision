@@ -20,7 +20,10 @@ Store Connect API key; no Apple ID password or local Mac is required for CI.
 2. Register at least one test device at [Apple Developer devices](https://developer.apple.com/account/resources/devices/list).
 3. Create an App Store Connect API key with App Manager access. Download the
    `.p8` file immediately and record its Key ID and Issuer ID.
-4. Create the OpenVision app in App Store Connect using the exact bundle ID
+4. In the Apple Developer portal (Identifiers), register the bundle ID and enable the
+   **Increased Memory Limit** capability. `OpenVision.entitlements` requests it, and `match`
+   does not enable capabilities, so a profile without it fails at archive time.
+5. Create the OpenVision app in App Store Connect using the exact bundle ID
    stored in `PRODUCT_BUNDLE_IDENTIFIER`, or use the workflow’s optional
    `register_app` input on its first run.
 
@@ -64,7 +67,7 @@ time after the workflow succeeds.
 ## Signing storage
 
 `match` stores encrypted signing assets in the private `match-certs` branch of
-this repository. The workflow has `contents: write` permission because the
+the repository the workflow runs in (`GITHUB_REPOSITORY`, so your fork). The workflow has `contents: write` permission because the
 first signing run may need to create or update that branch. Keep the branch
 protected as appropriate for the repository and never expose its decryption
 password.

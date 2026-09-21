@@ -48,7 +48,7 @@ platform :ios do
       type: "appstore",
       api_key: api_key,
       app_identifier: bundle_id,
-      git_url: "https://x-access-token:#{ENV.fetch('GITHUB_TOKEN')}@github.com/rayl15/OpenVision.git",
+      git_url: "https://x-access-token:#{ENV.fetch('GITHUB_TOKEN')}@github.com/#{ENV.fetch('GITHUB_REPOSITORY')}.git",
       git_branch: "match-certs",
       readonly: false,
       keychain_name: KEYCHAIN_NAME,

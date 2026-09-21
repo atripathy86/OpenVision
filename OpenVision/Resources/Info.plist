@@ -74,6 +74,11 @@
         <string>microphone</string>
     </array>
 
+    <!-- Export compliance: only exempt (standard OS/HTTPS) encryption, so TestFlight
+         doesn't hold every build for the encryption questionnaire. -->
+    <key>ITSAppUsesNonExemptEncryption</key>
+    <false/>
+
     <!-- Background Modes -->
     <key>UIBackgroundModes</key>
     <array>
