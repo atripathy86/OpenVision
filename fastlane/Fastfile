@@ -1,0 +1,94 @@
+require "securerandom"
+require "shellwords"
+require "yaml"
+
+default_platform(:ios)
+
+KEYCHAIN_NAME = "ci-build.keychain-db"
+
+platform :ios do
+  desc "Register OpenVision in App Store Connect (one-time setup)"
+  lane :register_app do
+    api_key = load_asc_api_key
+    marketing_version = YAML.load_file("project.yml").dig("settings", "base", "MARKETING_VERSION").to_s
+
+    produce(
+      api_key: api_key,
+      app_identifier: ENV.fetch("PRODUCT_BUNDLE_IDENTIFIER"),
+      app_name: "OpenVision",
+      language: "English",
+      app_version: marketing_version,
+      team_id: ENV.fetch("DEVELOPMENT_TEAM"),
+      skip_itc: false
+    )
+  end
+
+  desc "Build OpenVision and upload it to TestFlight"
+  lane :beta do
+    api_key = load_asc_api_key
+    bundle_id = ENV.fetch("PRODUCT_BUNDLE_IDENTIFIER")
+    build_number = ENV["GITHUB_RUN_NUMBER"] || Time.now.strftime("%Y%m%d%H%M")
+
+    increment_build_number(
+      xcodeproj: "OpenVision.xcodeproj",
+      build_number: build_number
+    )
+
+    keychain_password = SecureRandom.hex(16)
+    create_keychain(
+      name: KEYCHAIN_NAME,
+      password: keychain_password,
+      default_keychain: true,
+      unlock: true,
+      timeout: 3600,
+      lock_when_sleeps: false
+    )
+
+    match(
+      type: "appstore",
+      api_key: api_key,
+      app_identifier: bundle_id,
+      git_url: "https://x-access-token:#{ENV.fetch('GITHUB_TOKEN')}@github.com/rayl15/OpenVision.git",
+      git_branch: "match-certs",
+      readonly: false,
+      keychain_name: KEYCHAIN_NAME,
+      keychain_password: keychain_password
+    )
+
+    sh("security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k #{keychain_password.shellescape} #{KEYCHAIN_NAME.shellescape}")
+
+    profile_mapping = lane_context[SharedValues::MATCH_PROVISIONING_PROFILE_MAPPING]
+    profile_name = profile_mapping && profile_mapping[bundle_id]
+    UI.user_error!("match did not return a profile name for #{bundle_id}") if profile_name.nil?
+
+    build_app(
+      scheme: "OpenVision",
+      project: "OpenVision.xcodeproj",
+      configuration: "Release",
+      export_method: "app-store",
+      output_directory: "build",
+      output_name: "OpenVision.ipa",
+      xcargs: "PROVISIONING_PROFILE_SPECIFIER=#{profile_name.shellescape} " \
+              "CODE_SIGN_IDENTITY='Apple Distribution' " \
+              "CODE_SIGN_STYLE=Manual " \
+              "-skipMacroValidation -skipPackagePluginValidation"
+    )
+
+    upload_to_testflight(
+      api_key: api_key,
+      ipa: "build/OpenVision.ipa",
+      skip_waiting_for_build_processing: true,
+      distribute_external: false
+    )
+  end
+
+  private_lane :load_asc_api_key do
+    app_store_connect_api_key(
+      key_id: ENV.fetch("APP_STORE_CONNECT_API_KEY_ID"),
+      issuer_id: ENV.fetch("APP_STORE_CONNECT_API_ISSUER_ID"),
+      key_content: ENV.fetch("APP_STORE_CONNECT_API_KEY_CONTENT"),
+      is_key_content_base64: true,
+      in_house: false
+    )
+  end
+end
